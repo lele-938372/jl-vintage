@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  experimental: {
-    serverComponentsExternalPackages: ['@vercel/kv'],
-  },
+  serverExternalPackages: ['@upstash/redis'],
   images: {
     domains: ['images.unsplash.com', 'cdn.pixabay.com'],
   },
