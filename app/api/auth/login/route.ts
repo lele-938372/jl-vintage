@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserByEmail } from '@/lib/kv';
 import { verifyPassword, signToken, isAdminCredentials, ADMIN_EMAIL } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
