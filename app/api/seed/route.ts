@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
-import { seedIfEmpty } from '@/lib/kv';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET() {
-  await seedIfEmpty();
-  return NextResponse.json({ ok: true });
+  try {
+    const { seedIfEmpty } = await import('@/lib/kv');
+    await seedIfEmpty();
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return NextResponse.json({ ok: false });
+  }
 }
