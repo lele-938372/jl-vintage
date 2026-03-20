@@ -1,71 +1,54 @@
-// Vercel KV wrapper - falls back to in-memory for local dev
 import type { Product, User, Order, DiscountCode } from './types';
 
-let kv: any = null;
-
-async function getKV() {
-  if (kv) return kv;
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
-    return memoryStore;
+function getRedis() {
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return null;
   }
-  try {
-    const { kv: vercelKv } = await import('@vercel/kv');
-    kv = vercelKv;
-    return kv;
-  } catch {
-    return memoryStore;
-  }
+  const { Redis } = require('@upstash/redis');
+  return new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
 }
 
 const memStore: Record<string, any> = {};
-const memoryStore = {
-  get: async (key: string) => memStore[key] ?? null,
-  set: async (key: string, val: any) => { memStore[key] = val; return 'OK'; },
-  del: async (key: string) => { delete memStore[key]; return 1; },
-  sadd: async (key: string, ...members: string[]) => {
-    if (!memStore[key]) memStore[key] = new Set<string>();
-    members.forEach(m => memStore[key].add(m));
-    return members.length;
-  },
-  smembers: async (key: string) => {
-    if (!memStore[key]) return [];
-    return Array.from(memStore[key] as Set<string>);
-  },
-  srem: async (key: string, ...members: string[]) => {
-    if (!memStore[key]) return 0;
-    members.forEach(m => memStore[key].delete(m));
-    return members.length;
-  },
-};
+const memSets: Record<string, Set<string>> = {};
 
-export async function kvGet<T>(key: string): Promise<T | null> {
-  const store = await getKV();
-  return store.get(key);
+async function kvGet<T>(key: string): Promise<T | null> {
+  const redis = getRedis();
+  if (redis) return redis.get(key);
+  return memStore[key] ?? null;
 }
 
-export async function kvSet(key: string, value: any): Promise<void> {
-  const store = await getKV();
-  await store.set(key, value);
+async function kvSet(key: string, value: any): Promise<void> {
+  const redis = getRedis();
+  if (redis) { await redis.set(key, value); return; }
+  memStore[key] = value;
 }
 
-export async function kvDel(key: string): Promise<void> {
-  const store = await getKV();
-  await store.del(key);
+async function kvDel(key: string): Promise<void> {
+  const redis = getRedis();
+  if (redis) { await redis.del(key); return; }
+  delete memStore[key];
 }
 
-export async function kvSAdd(key: string, ...members: string[]): Promise<void> {
-  const store = await getKV();
-  await store.sadd(key, ...members);
+async function kvSAdd(key: string, ...members: string[]): Promise<void> {
+  const redis = getRedis();
+  if (redis) { await redis.sadd(key, ...members); return; }
+  if (!memSets[key]) memSets[key] = new Set();
+  members.forEach(m => memSets[key].add(m));
 }
 
-export async function kvSMembers(key: string): Promise<string[]> {
-  const store = await getKV();
-  return store.smembers(key) ?? [];
+async function kvSMembers(key: string): Promise<string[]> {
+  const redis = getRedis();
+  if (redis) return redis.smembers(key);
+  return Array.from(memSets[key] ?? []);
 }
 
-export async function kvSRem(key: string, ...members: string[]): Promise<void> {
-  const store = await getKV();
-  await store.srem(key, ...members);
+async function kvSRem(key: string, ...members: string[]): Promise<void> {
+  const redis = getRedis();
+  if (redis) { await redis.srem(key, ...members); return; }
+  members.forEach(m => memSets[key]?.delete(m));
 }
 
 export async function getProduct(id: string): Promise<Product | null> {
@@ -108,9 +91,7 @@ export async function saveUser(user: User): Promise<void> {
 export async function saveOrder(order: Order): Promise<void> {
   await kvSet(`order:${order.id}`, order);
   await kvSAdd('orders:all', order.id);
-  if (order.userId) {
-    await kvSAdd(`orders:user:${order.userId}`, order.id);
-  }
+  if (order.userId) await kvSAdd(`orders:user:${order.userId}`, order.id);
 }
 
 export async function getOrder(id: string): Promise<Order | null> {
@@ -148,48 +129,38 @@ export async function getAllDiscounts(): Promise<DiscountCode[]> {
 export async function seedIfEmpty() {
   const ids = await kvSMembers('products:all');
   if (ids.length > 0) return;
-
   const { v4: uuidv4 } = await import('uuid');
   const products: Product[] = [
     {
       id: uuidv4(), name: "Vintage Levi's 501 Jeans", price: 89, originalPrice: 120,
       category: 'Bottoms', images: ['https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600'],
-      description: "Klassische Levi's 501 aus den 90ern. Stonewash-Optik, leichte Distressing-Details.",
-      stock: 3, tags: ['denim', 'jeans', '90s'], featured: true, createdAt: new Date().toISOString(),
+      description: "Klassische Levi's 501 aus den 90ern.", stock: 3, tags: ['denim', 'jeans', '90s'], featured: true, createdAt: new Date().toISOString(),
     },
     {
       id: uuidv4(), name: 'Oversized Flannel Shirt', price: 45, originalPrice: 65,
       category: 'Tops', images: ['https://images.unsplash.com/photo-1516826957135-700dedea698c?w=600'],
-      description: 'Weiches Flanellhemd im Oversized-Schnitt. Perfekt für den Layered-Look.',
-      stock: 5, tags: ['flannel', 'shirt', 'grunge'], featured: true, createdAt: new Date().toISOString(),
+      description: 'Weiches Flanellhemd im Oversized-Schnitt.', stock: 5, tags: ['flannel', 'shirt'], featured: true, createdAt: new Date().toISOString(),
     },
     {
       id: uuidv4(), name: 'Vintage Champion Hoodie', price: 75, originalPrice: 95,
       category: 'Tops', images: ['https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600'],
-      description: 'Originales Champion-Hoodie aus den frühen 2000ern. Reverse Weave Material.',
-      stock: 2, tags: ['champion', 'hoodie', 'streetwear'], featured: false, createdAt: new Date().toISOString(),
+      description: 'Originales Champion-Hoodie aus den 2000ern.', stock: 2, tags: ['champion', 'hoodie'], featured: false, createdAt: new Date().toISOString(),
     },
     {
       id: uuidv4(), name: 'Corduroy Blazer', price: 110, originalPrice: 150,
       category: 'Outerwear', images: ['https://images.unsplash.com/photo-1594938298603-c8148c4b4462?w=600'],
-      description: 'Eleganter Cord-Blazer aus den 70ern. Braun mit goldenen Knöpfen.',
-      stock: 1, tags: ['blazer', 'corduroy', '70s'], featured: true, createdAt: new Date().toISOString(),
+      description: 'Eleganter Cord-Blazer aus den 70ern.', stock: 1, tags: ['blazer', 'corduroy'], featured: true, createdAt: new Date().toISOString(),
     },
     {
       id: uuidv4(), name: 'Vintage Band Tee', price: 35, originalPrice: 50,
       category: 'Tops', images: ['https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=600'],
-      description: 'Originalshirt aus den 90ern. Verblasste Prints, authentisches Feeling.',
-      stock: 8, tags: ['band tee', 't-shirt', '90s'], featured: false, createdAt: new Date().toISOString(),
+      description: 'Originalshirt aus den 90ern.', stock: 8, tags: ['band tee', 't-shirt'], featured: false, createdAt: new Date().toISOString(),
     },
     {
       id: uuidv4(), name: 'Leather Bomber Jacket', price: 195, originalPrice: 280,
       category: 'Outerwear', images: ['https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600'],
-      description: 'Echtes Leder, Vintage-Bomber aus den 80ern. Zeitlose Silhouette.',
-      stock: 1, tags: ['leather', 'bomber', '80s'], featured: true, createdAt: new Date().toISOString(),
+      description: 'Echtes Leder, Vintage-Bomber aus den 80ern.', stock: 1, tags: ['leather', 'bomber'], featured: true, createdAt: new Date().toISOString(),
     },
   ];
-
-  for (const p of products) {
-    await saveProduct(p);
-  }
+  for (const p of products) await saveProduct(p);
 }
