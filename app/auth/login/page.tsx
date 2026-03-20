@@ -33,12 +33,13 @@ export default function LoginPage() {
         await refresh();
         router.push(d.isAdmin ? '/admin' : '/account');
       }
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex">
-      {/* Left visual */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
         <img src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800" alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-[#1C1812]/50" />
@@ -47,14 +48,13 @@ export default function LoginPage() {
           <p className="font-display text-4xl italic text-white font-bold leading-tight">Willkommen<br />zuruck.</p>
         </div>
       </div>
-
-      {/* Right form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-8 py-16">
         <div className="w-full max-w-sm">
           <Link href="/" className="font-display text-2xl font-black tracking-widest text-[#1C1812] block mb-12">JL VINTAGE</Link>
           <h1 className="font-display text-4xl font-bold italic mb-2">Anmelden</h1>
-          <p className="font-body text-[#6B6560] mb-10">Noch kein Konto? <Link href="/auth/register" className="text-[#8B6914] hover:underline">Jetzt registrieren</Link></p>
-
+          <p className="font-body text-[#6B6560] mb-10">
+            Noch kein Konto? <Link href="/auth/register" className="text-[#8B6914] hover:underline">Jetzt registrieren</Link>
+          </p>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="font-sans text-[10px] tracking-[3px] uppercase text-[#6B6560] block mb-2">E-Mail</label>
@@ -69,10 +69,6 @@ export default function LoginPage() {
               {loading ? 'Wird geladen...' : 'Anmelden'}
             </button>
           </form>
-
-          <div className="mt-8 pt-8 border-t border-[#E8DFC8]">
-            <p className="font-sans text-[11px] tracking-[2px] uppercase text-[#6B6560] text-center">Admin-Login: Email = JLVINTAGEONTOP</p>
-          </div>
         </div>
       </div>
     </div>
