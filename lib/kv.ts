@@ -5,6 +5,9 @@ let kv: any = null;
 
 async function getKV() {
   if (kv) return kv;
+  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+    return memoryStore;
+  }
   try {
     const { kv: vercelKv } = await import('@vercel/kv');
     kv = vercelKv;
@@ -14,7 +17,6 @@ async function getKV() {
   }
 }
 
-// In-memory fallback (resets on restart, only for dev)
 const memStore: Record<string, any> = {};
 const memoryStore = {
   get: async (key: string) => memStore[key] ?? null,
@@ -66,7 +68,6 @@ export async function kvSRem(key: string, ...members: string[]): Promise<void> {
   await store.srem(key, ...members);
 }
 
-// Product helpers
 export async function getProduct(id: string): Promise<Product | null> {
   return kvGet<Product>(`product:${id}`);
 }
@@ -89,7 +90,6 @@ export async function getAllProducts(): Promise<Product[]> {
   );
 }
 
-// User helpers
 export async function getUserByEmail(email: string): Promise<User | null> {
   const id = await kvGet<string>(`user:email:${email.toLowerCase()}`);
   if (!id) return null;
@@ -105,7 +105,6 @@ export async function saveUser(user: User): Promise<void> {
   await kvSet(`user:email:${user.email.toLowerCase()}`, user.id);
 }
 
-// Order helpers
 export async function saveOrder(order: Order): Promise<void> {
   await kvSet(`order:${order.id}`, order);
   await kvSAdd('orders:all', order.id);
@@ -126,7 +125,6 @@ export async function getAllOrders(): Promise<Order[]> {
   );
 }
 
-// Discount helpers
 export async function getDiscount(code: string): Promise<DiscountCode | null> {
   return kvGet<DiscountCode>(`discount:${code.toUpperCase()}`);
 }
@@ -147,7 +145,6 @@ export async function getAllDiscounts(): Promise<DiscountCode[]> {
   return discounts.filter(Boolean) as DiscountCode[];
 }
 
-// Seed initial products if none exist
 export async function seedIfEmpty() {
   const ids = await kvSMembers('products:all');
   if (ids.length > 0) return;
@@ -155,34 +152,40 @@ export async function seedIfEmpty() {
   const { v4: uuidv4 } = await import('uuid');
   const products: Product[] = [
     {
-      id: uuidv4(), name: 'Vintage Levi\'s 501 Jeans', price: 89, originalPrice: 120,
+      id: uuidv4(), name: "Vintage Levi's 501 Jeans", price: 89, originalPrice: 120,
       category: 'Bottoms', images: ['https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600'],
-      description: 'Klassische Levi\'s 501 aus den 90ern. Stonewash-Optik, leichte Distressing-Details. Authentisches Vintage-Piece.', stock: 3, tags: ['denim', 'jeans', 'levi\'s', '90s'], featured: true, createdAt: new Date().toISOString(),
+      description: "Klassische Levi's 501 aus den 90ern. Stonewash-Optik, leichte Distressing-Details.",
+      stock: 3, tags: ['denim', 'jeans', '90s'], featured: true, createdAt: new Date().toISOString(),
     },
     {
       id: uuidv4(), name: 'Oversized Flannel Shirt', price: 45, originalPrice: 65,
       category: 'Tops', images: ['https://images.unsplash.com/photo-1516826957135-700dedea698c?w=600'],
-      description: 'Weiches Flanellhemd im Oversized-Schnitt. Perfekt für den Layered-Look.', stock: 5, tags: ['flannel', 'shirt', 'layering', 'grunge'], featured: true, createdAt: new Date().toISOString(),
+      description: 'Weiches Flanellhemd im Oversized-Schnitt. Perfekt für den Layered-Look.',
+      stock: 5, tags: ['flannel', 'shirt', 'grunge'], featured: true, createdAt: new Date().toISOString(),
     },
     {
       id: uuidv4(), name: 'Vintage Champion Hoodie', price: 75, originalPrice: 95,
       category: 'Tops', images: ['https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=600'],
-      description: 'Originales Champion-Hoodie aus den frühen 2000ern. Reverse Weave Material.', stock: 2, tags: ['champion', 'hoodie', 'streetwear', '00s'], featured: false, createdAt: new Date().toISOString(),
+      description: 'Originales Champion-Hoodie aus den frühen 2000ern. Reverse Weave Material.',
+      stock: 2, tags: ['champion', 'hoodie', 'streetwear'], featured: false, createdAt: new Date().toISOString(),
     },
     {
       id: uuidv4(), name: 'Corduroy Blazer', price: 110, originalPrice: 150,
       category: 'Outerwear', images: ['https://images.unsplash.com/photo-1594938298603-c8148c4b4462?w=600'],
-      description: 'Eleganter Cord-Blazer aus den 70ern. Braun mit goldenen Knöpfen.', stock: 1, tags: ['blazer', 'corduroy', '70s', 'smart'], featured: true, createdAt: new Date().toISOString(),
+      description: 'Eleganter Cord-Blazer aus den 70ern. Braun mit goldenen Knöpfen.',
+      stock: 1, tags: ['blazer', 'corduroy', '70s'], featured: true, createdAt: new Date().toISOString(),
     },
     {
       id: uuidv4(), name: 'Vintage Band Tee', price: 35, originalPrice: 50,
       category: 'Tops', images: ['https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=600'],
-      description: 'Originalshirt aus den 90ern. Verblasste Prints, authentisches Feeling.', stock: 8, tags: ['band tee', 't-shirt', '90s', 'music'], featured: false, createdAt: new Date().toISOString(),
+      description: 'Originalshirt aus den 90ern. Verblasste Prints, authentisches Feeling.',
+      stock: 8, tags: ['band tee', 't-shirt', '90s'], featured: false, createdAt: new Date().toISOString(),
     },
     {
       id: uuidv4(), name: 'Leather Bomber Jacket', price: 195, originalPrice: 280,
       category: 'Outerwear', images: ['https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600'],
-      description: 'Echtes Leder, Vintage-Bomber aus den 80ern. Zeitlose Silhouette.', stock: 1, tags: ['leather', 'bomber', 'jacket', '80s'], featured: true, createdAt: new Date().toISOString(),
+      description: 'Echtes Leder, Vintage-Bomber aus den 80ern. Zeitlose Silhouette.',
+      stock: 1, tags: ['leather', 'bomber', '80s'], featured: true, createdAt: new Date().toISOString(),
     },
   ];
 
