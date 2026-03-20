@@ -34,7 +34,7 @@ export default function Home() {
   const { add } = useCart();
 
   useEffect(() => {
-    fetch('/api/seed').then(() => fetch('/api/products')).then(r => r.json()).then((data: Product[]) => {
+    fetch('/api/products').then(r => r.json()).then((data: Product[]) => {
       setProducts(data.filter(p => p.featured).slice(0, 4));
       setSaleProducts(data.filter(p => p.originalPrice && p.originalPrice > p.price));
     });
@@ -55,15 +55,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      {/* HERO */}
       <section className="relative h-screen overflow-hidden">
         {HERO_SLIDES.map((s, i) => (
           <div key={i} className={`absolute inset-0 transition-opacity duration-1000 ${i === slide ? 'opacity-100' : 'opacity-0'}`}>
-            <img src={s.bg} alt="" className="w-full h-full object-cover scale-105 transition-transform duration-[8000ms]" style={{ transform: i === slide ? 'scale(1)' : 'scale(1.05)' }} />
+            <img src={s.bg} alt="" className="w-full h-full object-cover" style={{ transform: i === slide ? 'scale(1)' : 'scale(1.05)', transition: 'transform 8s ease' }} />
             <div className="absolute inset-0 bg-gradient-to-b from-[#1C1812]/20 via-transparent to-[#1C1812]/60" />
           </div>
         ))}
-
         <div className="relative z-10 h-full flex flex-col justify-end pb-20 px-8 md:px-20 max-w-7xl mx-auto">
           <div key={slide} className="animate-fade-up">
             <p className="font-sans text-[11px] tracking-[4px] uppercase text-[#E8DFC8] mb-4">{current.label}</p>
@@ -74,7 +72,6 @@ export default function Home() {
               <Link href="/about" className="btn-outline !text-white !border-white hover:!bg-white hover:!text-[#1C1812]">Uber Uns</Link>
             </div>
           </div>
-          {/* Slide indicators */}
           <div className="absolute bottom-8 right-8 flex gap-2">
             {HERO_SLIDES.map((_, i) => (
               <button key={i} onClick={() => setSlide(i)} className={`h-px transition-all duration-300 ${i === slide ? 'w-8 bg-white' : 'w-4 bg-white/40'}`} />
@@ -83,7 +80,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* MARQUEE */}
       <div className="bg-[#1C1812] py-4 overflow-hidden">
         <div className="flex animate-marquee whitespace-nowrap">
           {Array(4).fill(['VINTAGE', 'AUTHENTIC', 'CURATED', 'JL VINTAGE', 'RARE PIECES', 'SINCE 2024']).flat().map((t, i) => (
@@ -92,7 +88,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* SALE SLIDER */}
       {saleProducts.length > 0 && (
         <section className="py-20 bg-[#1C1812] overflow-hidden">
           <div className="max-w-7xl mx-auto px-8 mb-10 flex items-center justify-between">
@@ -102,7 +97,7 @@ export default function Home() {
             </div>
             <Link href="/shop?filter=sale" className="font-sans text-[11px] tracking-[2px] uppercase text-[#8B6914] hover:text-white transition-colors hidden md:block">Alle ansehen &rarr;</Link>
           </div>
-          <div className="flex gap-6 px-8 overflow-x-auto pb-4 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex gap-6 px-8 overflow-x-auto pb-4" style={{ scrollbarWidth: 'none' }}>
             {saleProducts.map((p, i) => (
               <SaleCard key={p.id} product={p} delay={i * 100} onAdd={() => add(p)} />
             ))}
@@ -110,7 +105,6 @@ export default function Home() {
         </section>
       )}
 
-      {/* FEATURED PRODUCTS */}
       <section ref={sectionRef} className="py-24 max-w-7xl mx-auto px-8">
         <div className="divider-vintage mb-16">
           <span className="font-display italic text-lg">Ausgewahlte Pieces</span>
@@ -125,7 +119,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* BRAND STATEMENT */}
       <section className="py-32 bg-[#E8DFC8] relative overflow-hidden">
         <div className="absolute top-0 left-0 w-1/2 h-full bg-[url('https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800')] bg-cover bg-center opacity-20" />
         <div className="relative z-10 max-w-3xl mx-auto text-center px-8">
@@ -134,13 +127,12 @@ export default function Home() {
             Kleidung mit Geschichte. Stil ohne Kompromisse.
           </h2>
           <p className="font-body text-lg text-[#6B6560] leading-relaxed mb-10">
-            Jedes Stuck in unserem Shop wurde handverlesen. Wir glauben an Mode, die Bestand hat — nicht an Wegwerftrends.
+            Jedes Stuck in unserem Shop wurde handverlesen. Wir glauben an Mode, die Bestand hat.
           </p>
           <Link href="/about" className="btn-primary">Unsere Geschichte</Link>
         </div>
       </section>
 
-      {/* CATEGORIES */}
       <section className="py-24 max-w-7xl mx-auto px-8">
         <p className="font-sans text-[11px] tracking-[4px] uppercase text-[#8B6914] mb-4 text-center">Kategorien</p>
         <h2 className="font-display text-4xl font-bold text-center mb-16">Nach Stil shoppen</h2>
@@ -162,13 +154,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="bg-[#1C1812] text-[#E8DFC8] py-16 px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
             <div>
               <h3 className="font-display text-3xl font-black tracking-wider mb-4">JL<br/>VINTAGE</h3>
-              <p className="font-body text-sm text-[#E8DFC8]/60 italic leading-relaxed">Kuratierte Vintage-Mode von Leandro & Justin. Jedes Stuck erz&auml;hlt eine Geschichte.</p>
+              <p className="font-body text-sm text-[#E8DFC8]/60 italic leading-relaxed">Kuratierte Vintage-Mode von Leandro & Justin.</p>
             </div>
             <div>
               <h4 className="font-sans text-[10px] tracking-[3px] uppercase text-[#8B6914] mb-6">Navigation</h4>
@@ -180,12 +171,12 @@ export default function Home() {
             </div>
             <div>
               <h4 className="font-sans text-[10px] tracking-[3px] uppercase text-[#8B6914] mb-6">Kontakt</h4>
-              <p className="font-body text-sm text-[#E8DFC8]/60">Fragen? Schreib uns auf Instagram<br/>oder per E-Mail.</p>
+              <p className="font-body text-sm text-[#E8DFC8]/60">Fragen? Schreib uns auf Instagram oder per E-Mail.</p>
               <div className="mt-4 h-px w-16 bg-[#8B6914]" />
             </div>
           </div>
           <div className="border-t border-[#E8DFC8]/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="font-sans text-[11px] tracking-[2px] uppercase text-[#E8DFC8]/30">© 2024 JL Vintage — Leandro & Justin</p>
+            <p className="font-sans text-[11px] tracking-[2px] uppercase text-[#E8DFC8]/30">2024 JL Vintage — Leandro & Justin</p>
             <p className="font-sans text-[11px] tracking-[2px] uppercase text-[#E8DFC8]/30">Handgepflegt. Handverlesen.</p>
           </div>
         </div>
@@ -197,7 +188,7 @@ export default function Home() {
 function SaleCard({ product, delay, onAdd }: { product: Product; delay: number; onAdd: () => void }) {
   const pct = product.originalPrice ? Math.round((1 - product.price / product.originalPrice) * 100) : 0;
   return (
-    <div className="flex-shrink-0 w-56 group cursor-pointer" style={{ animationDelay: `${delay}ms` }}>
+    <div className="flex-shrink-0 w-56 group cursor-pointer">
       <div className="relative h-72 overflow-hidden bg-[#2C2416]">
         <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
         <div className="absolute top-3 left-3 sale-badge">-{pct}%</div>
