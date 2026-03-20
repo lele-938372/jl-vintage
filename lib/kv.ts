@@ -51,6 +51,8 @@ async function kvSRem(key: string, ...members: string[]): Promise<void> {
   members.forEach(m => memSets[key]?.delete(m));
 }
 
+export { kvGet, kvSet, kvDel, kvSAdd, kvSMembers, kvSRem };
+
 export async function getProduct(id: string): Promise<Product | null> {
   return kvGet<Product>(`product:${id}`);
 }
@@ -86,6 +88,7 @@ export async function getUserById(id: string): Promise<User | null> {
 export async function saveUser(user: User): Promise<void> {
   await kvSet(`user:${user.id}`, user);
   await kvSet(`user:email:${user.email.toLowerCase()}`, user.id);
+  await kvSAdd('users:all', user.id);
 }
 
 export async function saveOrder(order: Order): Promise<void> {
